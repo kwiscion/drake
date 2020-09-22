@@ -1,1 +1,2 @@
-packages_to_install <- c('tidyverse', 'drake', 'lubridate', 'yardstick', 'caret', 'mgcv')
+
+install.packages(c('tidyverse', 'drake', 'lubridate', 'yardstick', 'caret', 'mgcv'))
