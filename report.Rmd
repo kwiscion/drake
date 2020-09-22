@@ -1,0 +1,27 @@
+---
+title: "Report"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(drake)
+library(ggplot2)
+
+loadd(metrics, test_predictions)
+```
+
+## Test set performance
+
+```{r}
+print(metrics)
+```
+
+```{r}
+ggplot(test_predictions, aes(prediction, traffic_volume)) +
+  geom_point() +
+  geom_smooth()
+```
+
+

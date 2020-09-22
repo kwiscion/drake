@@ -1,0 +1,210 @@
+---
+title: "drake"
+author: "Jakub Kwiecien"
+date: "9/6/2020"
+output:
+  ioslides_presentation: default
+  slidy_presentation: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# drake::build_times()
+# drake::cached()
+# drake::cached_planned()
+# drake::cancel()
+# drake::clean()
+# drake::drake_config()
+# drake::drake_debug()
+# drake::drake_history()
+# drake::drake_plan()
+# drake::id_chr()
+# 
+# 
+# 
+
+```
+
+## Agenda
+
+1. Why `drake` - motivation
+2. What is `drake` - basics
+3. Practice `drake` - let's get deeper
+    - track input/output files
+    - use batch mode to make your pipeline more reliable
+    - use static branching to manage large plans
+    - use dynamic branching for more flexible plan management
+
+## Why `drake` - motivation
+
+- Track your workflow and rerun only the necesary parts
+- Make your workflow reproducible
+- Scale your workflow easily
+- Keep your workflow tidy
+- Retrive history of your analysis
+
+## Exercise 1
+
+### <b>
+Go to `exercises/ex1.R`
+</b>
+
+The file contains a "standard" messy analysis.
+
+Please, clean it and rewrite so that every part of the analysis is done by a function.
+
+Avoid mutating existing objects!
+
+## What is `drake` - basics
+
+### <b>
+Let's see the code!
+</b>
+
+## Exercise 2
+
+### <b>
+Transform results of Exercise 1 into `drake_plan()` and execute the plan.
+</b>
+
+## Exercise 3
+
+### <b>
+Use plan from Exercise 2 and play with it for a while.
+</b>
+
+Run `make(plan)` again. Have you noticed any difference?
+
+Execute `clean()` and run `make(plan)` once again. What happened now?
+
+Try functions `readd()` and `loadd()` (you need to provide a target name!). What is the difference?
+
+Visualize dependency graph (`vis_drake_graph(plan)`) and play with it. 
+
+## Exercise 3 - continuation
+
+### <b>
+Use plan from Exercise 2 and play with it for a while.
+</b>
+
+How do the graph change after you clean one of the targets? And after you run `make(plan, 'model')`?
+
+Remove one of terms from GAM model (make sure to source the function!).  
+What was the impact on plan? Check `vis_drake_graph(plan)` and `outdated(plan)`.
+
+Edit input file by hand. What happened?
+
+## Track input/output files
+
+- `file_in` - for input file
+- `file_out` - for output file
+- `knitr_in` - for R Markdown reports
+
+
+### <b>
+Example:
+</b>
+`drake_plan(`   
+`  data = read.csv(file_in('input.csv'))`   
+`  ...`   
+`)`
+
+## Exercise 4
+
+### <b>
+Add file tracking to plan from Exercise 2.
+</b>
+
+Add input file tracking to the plan.
+
+Add to the plan rendering of `report.Rmd` (Hint: Use `kintr_in()` and `file_out()`).  
+Test what happens to the plan after modification to input file or removal of rendered report (html file).
+
+## Make your workflow reproducible
+
+### <b>
+Let's see the code!
+</b>
+
+## Exercise 5
+
+### <b>
+Make your pipeline more robust.
+</b>
+
+Change code from exercises 1-4 into four files:
+
+- `_drake.R`
+- `R/packages.R`
+- `R/functions.R`
+- `R/config.R`
+- `R/plan.R`
+      
+Now test `r_make()` and other `r_*()` functions.
+
+## Exercise 6
+
+### <b>
+Run your pipeline with and without standarization of numeric predictors.
+</b>
+
+- Add `standardize = c(TRUE, FALSE)` argument to preprocessing function and implement the functionality. (Hint: use `scale()`).
+- Put command that creates `data` target inside `target(..., map(standatdize = c(TRUE, FALSE)))` function.
+- Comment out rest of the targets and test if the plan works.
+- Uncomment rest of the plan* and add `target(..., map(...))` to each target (Hint: substitute dots inside map with upstream target name)
+- * Keep report commented out. We will deal with it in a moment.
+- Visualize dependency graph.
+
+## Exercise 7
+
+### <b>
+Combine test set predictions for standardized and unstandardized data into single data.frame.
+</b>
+
+- Add colmnt with target name to `test_predictions` data.frame. (Hint: use `id_chr()` to get name of current target).
+- Use `.id` argument of `map()` to simplify target names.
+- Use `target(bind_rows(test_predictions), transform = combine(test_predictions))` to create a single target.
+- Modify metrics calculation to use grouping variable and newly created combined target.
+- Uncomment the report.
+- Move `standardize = c(TRUE, FALSE)` from `plan.R` to `config.R` (Hint: remember to use `!!` in `plan.R`)
+
+## Exercise 8
+
+### <b>
+Prepare separate functions for GAM and GLM and fit both to the data.
+</b>
+
+- Create functions `fitGAM()` and `fitGLM()`
+- Put `model_functions <- rlang::syms(c("fitGLM", "fitGAM"))` in `config.R`
+- For target `model` substitute `map()` with `cross()` and add `model_functions` argument
+
+
+## Exercise 9
+
+### <b>
+Use dynamic branching to prepare separate model for each `day_type`
+</b>
+
+- use `split()` inside data preprocessing to create separate subtarger for each day_type
+- in next target(s) use `dynamic = map(...)` for iteration over subtargets
+
+<!-- ## Exercises -->
+
+<!-- 1. Piece of code into function -->
+
+<!-- 2. Messy analysis into functions + main -->
+
+<!-- 3. ex.2 into drake plan -->
+
+<!-- 4. ex.3 add _drake.R, config.R and packages.R -->
+
+<!-- 5. `dflow` ? -->
+
+<!-- 6. static branching -->
+
+<!-- 7. dynamic branching -->
+
+<!-- 8. parallelization -->
+
+<!-- 9. cleaning, historical targets, profiling, etc -->
