@@ -9,18 +9,18 @@ knitr::opts_chunk$set(echo = TRUE)
 library(drake)
 library(ggplot2)
 
-loadd(metrics, test_predictions)
+loadd(model, test_predictions)
 ```
 
 ## Test set performance
 
 ```{r}
-print(metrics)
+summary(model)
 ```
 
 ```{r}
-ggplot(test_predictions, aes(prediction, traffic_volume)) +
-  geom_point() +
+ggplot(test_predictions, aes(prediction, traffic_volume, color = day_type)) +
+  geom_point(alpha = 0.02) +
   geom_smooth()
 ```
 

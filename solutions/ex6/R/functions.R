@@ -1,5 +1,6 @@
-preprocessData <- function(data, standardize = FALSE) {
-  tmp <- data %>%
+
+preprocessData <- function(data) {
+  data %>%
     filter(temp > 0) %>%
     mutate(date = as.Date(date_time),
            hour = lubridate::hour(date_time)) %>%
@@ -8,33 +9,15 @@ preprocessData <- function(data, standardize = FALSE) {
                                 lubridate::wday(date, week_start = 1) >= 6 ~ 'Weekend',
                                 T  ~ 'Weekday')) %>%
     ungroup() %>%
-    mutate(day_type == as.factor(day_type)) %>%
-    select(day_type, temp, rain_1h, clouds_all, hour, traffic_volume)
-  
-  if(standardize) tmp[2:5] <- scale(tmp[2:5])
-  
-  tmp
+    mutate(day_type = as.factor(day_type)) %>%
+    select(day_type, temp, hour, traffic_volume)
+  }
+
+fitModel <- function(data, gam_k) {
+  gam(traffic_volume ~ s(hour, k = gam_k) + day_type + temp, data = data)
 }
-
-splitData <- function(data, p) {
-  tr_idx <- caret::createDataPartition(data$traffic_volume, p = p)$Resample1
-  list(train = data[tr_idx,], test = data[-tr_idx,])
-}
-
-
-fitModel <- function(data) {
-  gam(traffic_volume ~ s(hour) + day_type + temp + rain_1h + clouds_all, data = data)
-}
-
 
 predictNewData <- function(model, newdata) {
   newdata %>%
     mutate(prediction = predict(model, .))
-}
-
-calculateMetrics <- function(data) {
-  data %>%
-    summarize(rmse = yardstick::rmse_vec(traffic_volume, prediction),
-              r2 = yardstick::rsq_vec(traffic_volume, prediction)) %>%
-    pivot_longer(c(rmse, r2), names_to = 'metric')
 }

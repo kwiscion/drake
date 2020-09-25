@@ -1,6 +1,20 @@
-# EXERCISE 2 - SOLUTION
+# EXERCISE 3
 #
-# TASK: Transform results of Exercise 1 into drake_plan() and execute the plan.
+# TASK: Use plan from Exercise 2 and play with it for a while.
+# 
+# Run `make(plan)` again. Have you noticed any difference?
+# 
+# Execute `clean()` and run `make(plan)` once again. What happened now?
+# 
+# Try functions `readd()` and `loadd()` (you need to provide a target(s) name!). What is the difference?
+# 
+# Visualize dependency graph (`vis_drake_graph(plan)`) and play with it.
+# How do the graph change after you clean one of the targets? And after you run `make(plan, 'model')`?
+# 
+# Remove one of terms from GAM model (make sure to source the function!).
+# What was the impact on plan? Check `vis_drake_graph(plan)` and `outdated(plan)`.
+# 
+# Edit input file by hand. What happened?
 
 library(drake)
 library(dplyr)
@@ -48,3 +62,19 @@ plan <- drake_plan(
 )
 
 make(plan)
+
+make(plan)
+clean()
+make(plan)
+
+readd(data)
+loadd(data)
+
+vis_drake_graph(plan)
+
+clean(data)
+vis_drake_graph(plan)
+
+make(plan, 'model')
+vis_drake_graph(plan)
+outdated(plan)

@@ -6,4 +6,4 @@
 #       - R/functions.R
 #       - R/config.R
 #       - R/plan.R
-# Now test `r_make()` and other `r_*()` functions.
+# Test `r_make()` and other `r_*()` functions.

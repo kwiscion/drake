@@ -1,3 +1,4 @@
 library(drake)
-library(tidyverse)
+library(dplyr)
+library(purrr)
 library(mgcv)

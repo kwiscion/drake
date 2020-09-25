@@ -1,16 +1,20 @@
 # EXERCISE 1
 #
-# TASK: Below is a "standard" messy analysis.
-#       Please, clean it and rewrite so that every part of the analysis is done by a function.
-#       Avoid mutating existing objects!
+# TASK: 
+# Below is a "standard" messy analysis.
+# Please, clean it and rewrite so that every part of the analysis is done by a function.
+# Keep this values as function parameters:
+# input_file <- 'data/Metro_Interstate_Traffic_Volume.csv'
+# gam_k <- -1
 
-library(tidyverse)
+library(dplyr)
+library(purrr)
 
 # Read Traffic Volume dataset ---------------------------------------------
-data <- read_csv('data/Metro_Interstate_Traffic_Volume.csv')
+data <- read.csv('data/Metro_Interstate_Traffic_Volume.csv')
 
 data %>%
-  modify_if(is_character, as_factor) %>%
+  modify_if(is_character, as.factor) %>%
   summary
 
 
@@ -30,7 +34,7 @@ data <- data %>%
   ungroup()
 
 data <- data %>%
-  select(day_type, temp, rain_1h, snow_1h, clouds_all, hour, traffic_volume)
+  select(day_type, temp, hour, traffic_volume)
 
 data$day_type <- as.factor(data$day_type)
 
@@ -38,34 +42,12 @@ summary(data)
 
 data <- data %>% filter(temp > 0)
 
-data %>%
-  sample_n(1000) %>%
-  GGally::ggpairs()
-
-data <- data %>% select(-snow_1h)
-
-
-# Partition data ----------------------------------------------------------
-partition_rate <- 0.7
-tr_idx <- caret::createDataPartition(data$traffic_volume, p = partition_rate)$Resample1
-data <- list(train = data[tr_idx,], test = data[-tr_idx,])
-
-
 # Fit model ---------------------------------------------------------------
 library(mgcv)
 
-model <- gam(traffic_volume ~ s(hour) + day_type + temp + rain_1h + clouds_all, data = data$train)
-summary(model)
-plot(model, residuals = TRUE, pages = 1)
-
+model <- gam(traffic_volume ~ s(hour, k = -1) + day_type + temp, data = data)
 
 # Predict test set --------------------------------------------------------
-test_predictions <- data$test %>%
+test_predictions <- data %>%
   mutate(prediction = predict(model, .))
 
-
-# Evaluate test set performance -------------------------------------------
-metrics <- test_predictions %>%
-  summarize(rmse = yardstick::rmse_vec(traffic_volume, prediction),
-            r2 = yardstick::rsq_vec(traffic_volume, prediction)) %>%
-  pivot_longer(c(rmse, r2), names_to = 'metric')

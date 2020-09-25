@@ -6,7 +6,8 @@
 #       3. Test what happens to the plan after modification to input file or removal of rendered report (html)
 
 library(drake)
-library(tidyverse)
+library(dplyr)
+library(purrr)
 library(mgcv)
 
 # Functions ---------------------------------------------------------------
@@ -21,17 +22,12 @@ preprocessData <- function(data) {
                                 lubridate::wday(date, week_start = 1) >= 6 ~ 'Weekend',
                                 T  ~ 'Weekday')) %>%
     ungroup() %>%
-    mutate(day_type == as.factor(day_type)) %>%
-    select(day_type, temp, rain_1h, clouds_all, hour, traffic_volume)
+    mutate(day_type = as.factor(day_type)) %>%
+    select(day_type, temp, hour, traffic_volume)
 }
 
-splitData <- function(data, p) {
-  tr_idx <- caret::createDataPartition(data$traffic_volume, p = p)$Resample1
-  list(train = data[tr_idx,], test = data[-tr_idx,])
-}
-
-fitModel <- function(data) {
-  gam(traffic_volume ~ s(hour) + day_type + temp + rain_1h + clouds_all, data = data)
+fitModel <- function(data, gam_k) {
+  gam(traffic_volume ~ s(hour, k = gam_k) + day_type + temp, data = data)
 }
 
 predictNewData <- function(model, newdata) {
@@ -39,28 +35,19 @@ predictNewData <- function(model, newdata) {
     mutate(prediction = predict(model, .))
 }
 
-calculateMetrics <- function(data) {
-  data %>%
-    summarize(rmse = yardstick::rmse_vec(traffic_volume, prediction),
-              r2 = yardstick::rsq_vec(traffic_volume, prediction)) %>%
-    pivot_longer(c(rmse, r2), names_to = 'metric')
-}
 
 
 # Analysis ----------------------------------------------------------------
-
 plan <- drake_plan(
   # Data
-  data_in = read_csv(file_in('data/Metro_Interstate_Traffic_Volume.csv')),
+  data_in = read_csv('data/Metro_Interstate_Traffic_Volume.csv'),
   data = preprocessData(data_in),
   
   # Model
-  splited = splitData(data, p = 0.7),
-  model = fitModel(splited$train),
+  model = fitModel(data, gam_k = -1),
   
-  # Performance
-  test_predictions = predictNewData(model, splited$test),
-  metrics = calculateMetrics(test_predictions),
+  #Performance
+  test_predictions = predictNewData(model, data),
   
   # Report
   report = rmarkdown::render(

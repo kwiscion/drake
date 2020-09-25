@@ -1,40 +1,23 @@
 plan <- drake_plan(
   # Data
-  data_in = read_csv(file_in(!! input_file)),
-  data = target(
-    preprocessData(data_in, standardize),
-    transform = map(standardize = c(TRUE, FALSE))
-  ),
+  data_in = read.csv('data/Metro_Interstate_Traffic_Volume.csv'),
+  data = preprocessData(data_in),
   
   # Model
-  splited = target(
-    splitData(data, p = partition_rate),
-    transform = map(data)
-  ),
+  model = target(fitModel(data, gam_k = gam_k),
+                 transform = map(gam_k = c(-1, 5, 10))),
   
-  model = target(
-    model_function(splited$train),
-    transform = map(splited)
-  ),
+  #Performance
+  test_predictions = target(predictNewData(model, data),
+                            transform = map(model)),
   
-  # Performance
-  test_predictions = target(
-    predictNewData(model, splited$test) %>%
-      mutate(id = id_chr()),
-    transform = map(model, .id = c(model_function, standardize))
-  ),
-  
-  test_predictions_combined = target(
-    bind_rows(test_predictions),
-    transform = combine(test_predictions)
-  ),
-  
-  metrics = calculateMetrics(test_predictions, id),
+  test_predictions_all = target(bind_rows(test_predictions),
+                                combine(test_predictions)),
   
   # Report
-  report = rmarkdown::render(
-    knitr_in("report.Rmd"),
-    output_file = file_out("report.html"),
-    quiet = TRUE
-  )
+  # report = rmarkdown::render(
+  #   knitr_in("report.Rmd"),
+  #   output_file = file_out("report.html"),
+  #   quiet = TRUE
+  # )
 )

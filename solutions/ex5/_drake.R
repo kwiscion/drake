@@ -10,6 +10,7 @@
 # - R/functions.R
 # - R/config.R
 # - R/plan.R
+# Test `r_make()` and other `r_*()` functions.
 
 
 source('R/packages.R')

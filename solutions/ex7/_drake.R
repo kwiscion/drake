@@ -2,15 +2,10 @@
 # MOVE TO MAIN PROJECT DIRECTORY #
 ##################################
 
-# EXERCISE 5
+# EXERCISE 7
 #
-# TASK: Change code from exercises 1-4 into four files:
-# - _drake.R
-# - R/packages.R
-# - R/functions.R
-# - R/config.R
-# - R/plan.R
-
+# TASK: Combine test set predictions targets into a single target
+# HINT: use `bind_rows()`
 
 source('R/packages.R')
 source('R/functions.R')

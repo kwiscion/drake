@@ -1,0 +1,369 @@
+---
+title: "drake"
+author: "Jakub Kwiecien"
+date: "9/25/2020"
+output:
+  ioslides_presentation: default
+  beamer_presentation: default
+  slidy_presentation: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+## Technical
+
+- Please clone the repo: https://github.com/kwiscion/drake  
+`git clone https://github.com/kwiscion/drake.git`
+
+- Please install/update packages (`pkgs.R`)
+- Please ask questions!
+- There will be exercises:
+    - `exercieses/*` - start here
+    - `solutions/*` - please don't jump right into here
+- Main resource for `drake`: https://books.ropensci.org/drake/index.html
+- Contact to me: kwiscion@gmail.com
+
+## Outline
+
+1. Why `drake` - motivation
+2. What is `drake` - basics
+    - make your first plan
+    - get familiar with basic commands
+3. Practice `drake` - let's get deeper
+    - track input/output files
+    - use batch mode to make your pipeline more reliable
+    - use static branching to manage large plans
+    - play with some commands
+    - use dynamic branching for more flexible plan management
+   
+# Why `drake` - motivation
+
+## Why `drake` - motivation
+
+- Track your workflow and rerun only the necesary parts
+- Make your workflow reproducible
+- Scale your workflow easily
+- Keep your workflow tidy
+- Retrive history of your analysis
+
+## Warm up - use functions!
+
+Instead of
+
+```{r eval=FALSE, echo=TRUE}
+c <- a + (5 * b)
+```
+
+## Warm up - use functions!
+
+Instead of
+
+```{r eval=FALSE, echo=TRUE}
+c <- a + (5 * b)
+```
+
+use
+
+```{r eval=FALSE, echo=TRUE}
+f <- function(x, y) {
+  x + (5 * y)
+}
+
+c <- f(a, b)
+```
+
+## Exercise 1
+
+In file `exercises/ex1.R` there is is a "standard" messy analysis.  
+
+Please, clean it and rewrite so that every part of the analysis is done by a function.
+
+Keep this values as function parameters:
+
+- input_file <- 'data/Metro_Interstate_Traffic_Volume.csv'
+- gam_k <- -1
+
+# What is `drake` - basics
+
+## What is `drake` - basics
+
+<b>
+Plan steps of your process
+</b>
+```{r eval=FALSE, echo=TRUE}
+plan <- drake_plan(
+  a = getA(),
+  b = getB(),
+  c = f(a, b)
+)
+```
+
+## What is `drake` - basics
+
+<b>
+Plan steps of your process
+</b>
+```{r eval=FALSE, echo=TRUE}
+plan <- drake_plan(
+  a = getA(),
+  b = getB(),
+  c = f(a, b)
+)
+```
+
+<b>
+Execute them
+</b>
+```{r eval=FALSE, echo=TRUE}
+make(plan)
+```
+
+## What is `drake` - basics
+
+<b>
+Plan steps of your process
+</b>
+```{r eval=FALSE, echo=TRUE}
+plan <- drake_plan(
+  a = getA(),
+  b = getB(),
+  c = f(a, b)
+)
+```
+
+<b>
+Execute them
+</b>
+```{r eval=FALSE, echo=TRUE}
+make(plan)
+```
+
+<b>
+And get the results
+</b>
+```{r eval=FALSE, echo=TRUE}
+readd(c)
+```
+
+
+## Exercise 2
+Transform results of Exercise 1 into drake_plan() and execute the plan.
+
+## Exercise 3
+
+Use plan from Exercise 2 and play with it for a while.
+
+- Run `make(plan)` again. Have you noticed any difference?
+- Execute `clean()` and run `make(plan)` once again. What happened now?
+- Try functions `readd()` and `loadd()` (you need to provide a target(s) name!). What is the difference? 
+- Visualize dependency graph (`vis_drake_graph(plan)`) and play with it.  
+How do the graph change after you clean one of the targets? And after you run `make(plan, 'model')`?
+- Remove one of terms from GAM model (make sure to source the function!). 
+What was the impact on plan? Check `vis_drake_graph(plan)` and `outdated(plan)`.
+- Edit input file by hand. What happened?
+
+# Practice `drake` - let's get deeper
+
+## Track input/output files
+
+- `file_in` - for input file
+- `file_out` - for output file
+- `knitr_in` - for R Markdown reports
+
+
+<b>
+Example:
+</b>
+
+```{r eval = FALSE, echo=TRUE}
+drake_plan(   
+  data = read.csv(file_in('input.csv'))
+  ...
+)
+```
+
+
+## Exercise 4
+
+Use plan from Exercise 2 and:
+
+- Add input file tracking to the plan
+- Add to the plan rendering of `report.Rmd` to `report.html` (Hint: Use `rmarkdown::render()`, `kintr_in()` and `file_out()`)
+- Test what happens to the plan after modification to input file or removal of rendered report (html file)
+
+## Make your workflow reproducible
+
+<b>
+Project structure
+</b>
+
+```{r eval = FALSE, echo=TRUE}
+ ./
+ |_ R/
+ |  |_ config.R
+ |  |_ functions.R
+ |  |_ packages.R
+ |  |_ plan.R
+ |
+ |_ _drake.R
+```
+
+## Make your workflow reproducible
+
+<b>
+`_drake.R`
+</b>
+```{r eval = FALSE, echo=TRUE}
+source('R/packages.R')
+source('R/functions.R')
+source('R/config.R')
+source('R/plan.R')
+
+drake_config(plan, verbose = 2L)
+```
+
+
+## Exercise 5
+
+<b>
+Make your pipeline more robust.
+</b>
+
+Change code from exercises 1-4 into four files:
+
+- `_drake.R`
+- `R/packages.R`
+- `R/functions.R`
+- `R/config.R`
+- `R/plan.R`
+      
+Now test `r_make()` and other `r_*()` functions.
+
+## Static branching
+
+<b>Multiple parameter values - wrong way</b>
+```{r eval = FALSE, echo=TRUE}
+drake_plan(   
+  ...
+  rf_10 = fitRandomForest(data, trees = 10),
+  rf_100 = fitRandomForest(data, trees = 100),
+  rf_1000 = fitRandomForest(data, trees = 1000),
+  model_summary_10 = summary(rf_10),
+  model_summary_100 = summary(rf_100),
+  model_summary_1000 = summary(rf_1000),
+  ...
+)
+```
+
+## Static branching
+
+<b>Multiple parameter values - wrong way</b>
+
+![](graph1.png)
+
+## Static branching
+
+<b>Multiple parameter values - right way</b>
+```{r eval = FALSE, echo=TRUE}
+drake_plan(   
+  ...
+  rf = target(fitRandomForest(data, trees = trees),
+              transform = map(trees = c(10, 100, 1000)),
+  
+  model_summary = target(summary(rf),
+                         transform = map(rf)),
+  ...
+)
+```
+
+## Static branching
+
+<b>Multiple parameter values - right way</b>
+
+![](graph1.png)
+
+## Static branching
+
+<b>Multiple parameter values - right way</b>
+```{r eval = FALSE, echo=TRUE}
+
+param <-  c(10, 100, 1000))
+
+drake_plan(   
+  ...
+  rf = target(fitRandomForest(data, trees = trees),
+              transform = map(trees = !! param,
+  
+  model_summary = target(summary(rf),
+                         transform = map(rf)),
+  ...
+)
+```
+
+## Exercise 6
+
+Test few `gam_k` parameter values.
+
+- Use `map()` to parametrize targets affected
+- For simplicity, please remove report rendering
+
+<b>BONUS TASK:</b> Try modifying the report (both `report.Rmd` and rendering function) 
+to make it work with branching (HINT: `id_chr()` gives current target name)
+
+## Static branching
+
+<b>Available transformations:</b>
+
+- `map()` - iterate over parameters simulatouslt
+- `split()` - distribute data uniformly across subtargets
+- `cross()` - crossproduct of parameters
+- `combine()` - combine multiple subtargets into one
+
+
+## Exercise 7
+
+Combine test set predictions targets into a single target.
+
+HINT: use `bind_rows()`
+
+## Exercise 8
+
+<b>
+Play with `drake` a bit more
+</b>
+
+- Set `map(gam_k = c(-1, 3, 5, 8, 10, 15))` and test `max_expand` argument of `drake_plan()`
+
+- Check what `build_times()` and `predict_runtime(plan)` do
+
+- Check what `drake_history()` does 
+
+- Use some `hash` obtained from `drake_history()` to retrive targer from `drake_cache()`  
+HINT: Use `drake_cache()$get_value()`
+
+- Try debuging one of the targets  
+HINT: Use `drake_debug()`
+
+## Dynamic branching
+
+```{r eval = FALSE, echo=TRUE}
+drake_plan(   
+  data = iris %>% split(.$Species),
+  
+  summary = target(summary(data),
+                   dynamic = map(data)),
+)
+```
+
+![](graph2.png)
+
+## Exercise 9
+
+Use dynamic branching to prepare separate model for each `day_type`
+
+- use `split()` inside data preprocessing to create separate subtarger for each day_type
+- in next target(s) use `dynamic = map(...)` for iteration over subtargets
+- HINT: In plan, change data to data[[1]]
+
+# Thank you!
